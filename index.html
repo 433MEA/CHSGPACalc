@@ -25,7 +25,7 @@
             flex: 1;
         }
         .inputRow > select {
-            flex: 0.5;
+            flex: 0.25;
         }
         button {
             background-color: #007BFF;
@@ -39,7 +39,7 @@
             background-color: #0056b3;
         }
         table {
-            width: 100%;
+            width: 85%;
             border-collapse: collapse;
             margin-top: 20px;
         }
@@ -60,6 +60,20 @@
                 <option value="CCP">CCP</option>
                 <option value="AP/ECE">AP/ECE</option>
             </select>
+            <select name="target[]">
+                <option value="A+">A+</option>
+                <option value="A">A</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B">B</option>
+                <option value="B-">B-</option>
+                <option value="C+">C+</option>
+                <option value="C">C+</option>
+                <option value="C-">C-</option>
+                <option value="D+">D+</option>
+                <option value="D">D</option>
+                <option value="D-">D-</option>
+            </select>
             <input type="text" name="raw_string[]" placeholder="Raw PowerSchool String">
             <button type="button" onclick="addRow()">Add Row</button>
             <button type="button" onclick="submitForm()">Submit</button>
@@ -73,6 +87,8 @@
             "CCP": {"A+": 4.83, "A": 4.5, "A-": 4.16, "B+": 3.83, "B": 3.5, "B-": 3.16, "C+": 2.83, "C": 2.5, "C-": 2.16, "D+": 1.83, "D": 1.5, "D-": 1.16, "F": 0},
             "AP/ECE": {"A+": 5.33, "A": 5, "A-": 4.66, "B+": 4.33, "B": 4, "B-": 3.66, "C+": 3.33, "C": 3, "C-": 2.66, "D+": 2.33, "D": 2, "D-": 1.66, "F": 0}
         };
+
+        const gradeThresholds = {"A+": 0.965,"A": 0.925,"A-": 0.895,"B+": 0.865,"B": 0.825,"B-": 0.795,"C+": 0.765,"C": 0.725,"C-": 0.695,"D+": 0.665,"D": 0.625, "D-": 0.595};
 
         function sumFractionsInString(s) {
             const datePattern = /\b\d{2}\/\d{2}\/\d{4}\b/g;
@@ -106,6 +122,11 @@
             return 'F';
         }
 
+        function solveEquations(a, b,target) {
+            const targ = gradeThresholds[target];
+            return [((targ * b - a) / (1-targ)).toFixed(2),(b * targ - a).toFixed(2)]
+        }
+
         function addRow() {
             const container = document.getElementById('inputArea');
             const newRow = document.createElement('div');
@@ -117,6 +138,20 @@
                     <option value="CP">CP</option>
                     <option value="CCP">CCP</option>
                     <option value="AP/ECE">AP/ECE</option>
+                </select>
+                <select name="target[]">
+                    <option value="A+">A+</option>
+                    <option value="A">A</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B">B</option>
+                    <option value="B-">B-</option>
+                    <option value="C+">C+</option>
+                    <option value="C">C+</option>
+                    <option value="C-">C-</option>
+                    <option value="D+">D+</option>
+                    <option value="D">D</option>
+                    <option value="D-">D-</option>
                 </select>
                 <input type="text" name="raw_string[]" placeholder="Raw PowerSchool String">
                 <button type="button" onclick="addRow()">Add Row</button>
@@ -147,8 +182,9 @@
                 const credit = parseFloat(data['credit[]'][i]);
                 const level = data['level[]'][i];
                 const rawString = data['raw_string[]'][i];
-
                 const [numeratorSum, denominatorSum] = sumFractionsInString(rawString);
+                const target = data['target[]'][i];
+                const [both, top] = solveEquations(numeratorSum,denominatorSum,target)
                 const average = numeratorSum / denominatorSum;
                 const grade = gradeNumber(average);
                 const gpa = gradeToGPA[level][grade] * credit;
@@ -156,7 +192,7 @@
                 totCount += gpa;
                 credCount += credit;
 
-                results.push({ class: cls, credit, level, grade: `${numeratorSum}/${denominatorSum} (${grade})`});
+                results.push({ class: cls, credit, level, grade: `${numeratorSum}/${denominatorSum} (${grade})`, points:`Till ${target}: ${both} (${top})`});
             }
 
             const curGPA = totCount / credCount;
@@ -166,10 +202,10 @@
         function displayResults({ results, curGPA }) {
             const content = document.getElementById('content');
             let html = `<div>Current GPA: ${curGPA}</div>`;
-            html += '<table border="1"><thead><tr><th>Class</th><th>Credit</th><th>Level</th><th>Raw Grade</th></tr></thead><tbody>';
+            html += '<table border="1"><thead><tr><th>Class</th><th>Credit</th><th>Level</th><th>Raw Grade</th><th>Points Till</th></tr></thead><tbody>';
 
             results.forEach(({ class: cls, credit, level, grade }) => {
-                html += `<tr><td>${cls}</td><td>${credit}</td><td>${level}</td><td>${grade}</td></tr>`;
+                html += `<tr><td>${cls}</td><td>${credit}</td><td>${level}</td><td>${grade}</td><td>${points}</td></tr>`;
             });
 
             html += '</tbody></table>';
