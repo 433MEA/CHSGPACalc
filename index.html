@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Course Data Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        form, .content {
+            margin-bottom: 20px;
+        }
+        .inputRow {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .inputRow > input, .inputRow > select {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .inputRow > input, .inputRow > button {
+            flex: 1;
+        }
+        .inputRow > select {
+            flex: 0.5;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid black;
+            text-align: center;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <form id="dataForm">
+        <div id="inputArea" class="inputRow">
+            <input type="text" name="class[]" placeholder="Class">
+            <input type="text" name="credit[]" placeholder="Credit">
+            <select name="level[]">
+                <option value="CP">CP</option>
+                <option value="CCP">CCP</option>
+                <option value="AP/ECE">AP/ECE</option>
+            </select>
+            <input type="text" name="raw_string[]" placeholder="Raw PowerSchool String">
+            <button type="button" onclick="addRow()">Add Row</button>
+            <button type="button" onclick="submitForm()">Submit</button>
+        </div>
+    </form>
+    <div id="content"></div> <!-- Dynamic content will be loaded here -->
+
+    <script>
+        const gradeToGPA = {
+            "CP": {"A+": 4.33, "A": 4, "A-": 3.66, "B+": 3.33, "B": 3, "B-": 2.66, "C+": 2.33, "C": 2, "C-": 1.66, "D+": 1.33, "D": 1, "D-": 0.66, "F": 0},
+            "CCP": {"A+": 4.83, "A": 4.5, "A-": 4.16, "B+": 3.83, "B": 3.5, "B-": 3.16, "C+": 2.83, "C": 2.5, "C-": 2.16, "D+": 1.83, "D": 1.5, "D-": 1.16, "F": 0},
+            "AP/ECE": {"A+": 5.33, "A": 5, "A-": 4.66, "B+": 4.33, "B": 4, "B-": 3.66, "C+": 3.33, "C": 3, "C-": 2.66, "D+": 2.33, "D": 2, "D-": 1.66, "F": 0}
+        };
+
+        function gradeNumber(score) {
+            if (score >= 0.965) return 'A+';
+            if (score >= 0.925) return 'A';
+            if (score >= 0.895) return 'A-';
+            if (score >= 0.865) return 'B+';
+            if (score >= 0.825) return 'B';
+            if (score >= 0.795) return 'B-';
+            if (score >= 0.765) return 'C+';
+            if (score >= 0.725) return 'C';
+            if (score >= 0.695) return 'C-';
+            if (score >= 0.665) return 'D+';
+            if (score >= 0.625) return 'D';
+            if (score >= 0.595) return 'D-';
+            return 'F';
+        }
+
+        function addRow() {
+            const container = document.getElementById('inputArea');
+            const newRow = document.createElement('div');
+            newRow.className = 'inputRow';
+            newRow.innerHTML = `
+                <input type="text" name="class[]" placeholder="Class">
+                <input type="text" name="credit[]" placeholder="Credit">
+                <select name="level[]">
+                    <option value="CP">CP</option>
+                    <option value="CCP">CCP</option>
+                    <option value="AP/ECE">AP/ECE</option>
+                </select>
+                <input type="text" name="raw_string[]" placeholder="Raw PowerSchool String">
+                <button type="button" onclick="addRow()">Add Row</button>
+                <button type="submit">Submit</button>
+            `;
+            container.appendChild(newRow);
+        }
+
+        function submitForm() {
+            const form = document.getElementById('dataForm');
+            const inputs = form.querySelectorAll('input, select');
+            let data = Array.from(inputs).reduce((acc, input) => {
+                (acc[input.name] = acc[input.name] || []).push(input.value);
+                return acc;
+            }, {});
+
+            let output = calculateGPA(data);
+            displayResults(output);
+        }
+
+        function calculateGPA(data) {
+            let totCount = 0;
+            let credCount = 0;
+            const results = [];
+
+            for (let i = 0; i < data['class[]'].length; i++) {
+                const cls = data['class[]'][i];
+                const credit = parseFloat(data['credit[]'][i]);
+                const level = data['level[]'][i];
+                const rawString = data['raw_string[]'][i];
+
+                const fractions = rawString.match(/(?<!\d)(\d+\.?\d*)\/(\d+)(?!\d)/g).map(frac => {
+                    const parts = frac.split('/');
+                    return parseFloat(parts[0]) / parseFloat(parts[1]);
+                });
+
+                const average = fractions.reduce((a, b) => a + b, 0) / fractions.length;
+                const grade = gradeNumber(average);
+                const gpa = gradeToGPA[level][grade] * credit;
+
+                totCount += gpa;
+                credCount += credit;
+
+                results.push({ class: cls, credit, level, grade });
+            }
+
+            const curGPA = totCount / credCount;
+            return { results, curGPA: curGPA.toFixed(7) };
+        }
+
+        function displayResults({ results, curGPA }) {
+            const content = document.getElementById('content');
+            let html = `<div>Current GPA: ${curGPA}</div>`;
+            html += '<table border="1"><thead><tr><th>Class</th><th>Credit</th><th>Level</th><th>Raw Grade</th></tr></thead><tbody>';
+
+            results.forEach(({ class: cls, credit, level, grade }) => {
+                html += `<tr><td>${cls}</td><td>${credit}</td><td>${level}</td><td>${grade}</td></tr>`;
+            });
+
+            html += '</tbody></table>';
+            content.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
