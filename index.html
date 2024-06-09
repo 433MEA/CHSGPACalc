@@ -74,6 +74,22 @@
             "AP/ECE": {"A+": 5.33, "A": 5, "A-": 4.66, "B+": 4.33, "B": 4, "B-": 3.66, "C+": 3.33, "C": 3, "C-": 2.66, "D+": 2.33, "D": 2, "D-": 1.66, "F": 0}
         };
 
+        function sumFractionsInString(s) {
+            const datePattern = /\b\d{2}\/\d{2}\/\d{4}\b/g;
+            s = s.replace(datePattern, '');
+            const fractionPattern = /(?<!\d)(\d+\.?\d*)\/(\d+)(?!\d)/g;
+            let numeratorSum = 0.0;
+            let denominatorSum = 0.0;
+            let match;
+            while ((match = fractionPattern.exec(s)) !== null) {
+                const num = parseFloat(match[1]);
+                const den = parseFloat(match[2]);
+                numeratorSum += num;
+                denominatorSum += den;
+            }
+            return [numeratorSum, denominatorSum];
+        }
+
         function gradeNumber(score) {
             if (score >= 0.965) return 'A+';
             if (score >= 0.925) return 'A';
