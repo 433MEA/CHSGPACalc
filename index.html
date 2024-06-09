@@ -204,7 +204,7 @@
             let html = `<div>Current GPA: ${curGPA}</div>`;
             html += '<table border="1"><thead><tr><th>Class</th><th>Credit</th><th>Level</th><th>Raw Grade</th><th>Points Till</th></tr></thead><tbody>';
 
-            results.forEach(({ class: cls, credit, level, grade }) => {
+            results.forEach(({ class: cls, credit, level, grade, points}) => {
                 html += `<tr><td>${cls}</td><td>${credit}</td><td>${level}</td><td>${grade}</td><td>${points}</td></tr>`;
             });
 
