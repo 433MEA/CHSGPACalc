@@ -90,23 +90,6 @@
             return 'F';
         }
 
-        function sumFractionsInString(s) {
-            const datePattern = /\b\d{2}\/\d{2}\/\d{4}\b/g;
-            s = s.replace(datePattern, '');
-            const fractionPattern = /(?<!\d)(\d+\.?\d*)\/(\d+)(?!\d)/g;
-            let numeratorSum = 0.0;
-            let denominatorSum = 0.0;
-            let match;
-            while ((match = fractionPattern.exec(s)) !== null) {
-                const num = parseFloat(match[1]);
-                const den = parseFloat(match[2]);
-                numeratorSum += num;
-                denominatorSum += den;
-            }
-            return [numeratorSum, denominatorSum];
-        }
-
-
         function addRow() {
             const container = document.getElementById('inputArea');
             const newRow = document.createElement('div');
@@ -121,7 +104,7 @@
                 </select>
                 <input type="text" name="raw_string[]" placeholder="Raw PowerSchool String">
                 <button type="button" onclick="addRow()">Add Row</button>
-                <button type="submit">Submit</button>
+                <button type="button" onclick="submitForm()">Submit</button>
             `;
             container.appendChild(newRow);
         }
@@ -149,15 +132,15 @@
                 const level = data['level[]'][i];
                 const rawString = data['raw_string[]'][i];
 
-
-                const average = fractions.reduce((a, b) => a + b, 0) / fractions.length;
+                const [numeratorSum, denominatorSum] = sumFractionsInString(rawString);
+                const average = numeratorSum / denominatorSum;
                 const grade = gradeNumber(average);
                 const gpa = gradeToGPA[level][grade] * credit;
 
                 totCount += gpa;
                 credCount += credit;
 
-                results.push({ class: cls, credit, level, sumFractionsInString(rawString)});
+                results.push({ class: cls, credit, level, grade: `${numeratorSum}/${denominatorSum} (${grade})`});
             }
 
             const curGPA = totCount / credCount;
